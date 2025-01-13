@@ -82,23 +82,64 @@ function FormularioAtualizacaoEncomenda({ encomendaId, dataEntregaInicial }) {
   );
 }
 
-const encomendaMock = {
-  encomendaID: '12345',
-  encomendaCompleta: false,
-  profissionalID: 'PROF001',
-  dataEncomenda: '2023-05-01',
-  dataEntrega: '2023-05-10',
-  aprovadoPorAdministrador: true,
-  estadoID: 'PENDENTE',
-  fornecedorID: 'FORN001'
-};
+function Sidebar({ orders, onSelectOrder }) {
+  return (
+    <aside className="sidebar">
+      <h2 className="sidebar-title">Encomendas</h2>
+      <ul className="order-list">
+        {orders.map((order) => (
+          <li
+            key={order.encomendaID}
+            className="order-item"
+            onClick={() => onSelectOrder(order)}
+          >
+            Encomenda #{order.encomendaID}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
 
 export default function Home() {
+  const ordersMock = [
+    {
+      encomendaID: '12345',
+      encomendaCompleta: false,
+      profissionalID: 'PROF001',
+      dataEncomenda: '2023-05-01',
+      dataEntrega: '2023-05-10',
+      aprovadoPorAdministrador: true,
+      estadoID: 'PENDENTE',
+      fornecedorID: 'FORN001',
+    },
+    {
+      encomendaID: '67890',
+      encomendaCompleta: true,
+      profissionalID: 'PROF002',
+      dataEncomenda: '2023-06-15',
+      dataEntrega: '2023-06-20',
+      aprovadoPorAdministrador: false,
+      estadoID: 'CONCLUIDO',
+      fornecedorID: 'FORN002',
+    },
+  ];
+
+  const [selectedOrder, setSelectedOrder] = useState(ordersMock[0]);
+
   return (
-    <main className="home-container">
+    <div className="home-container">
       <h1 className="page-title">Gestão de Encomendas do Fornecedor de Medicamentos</h1>
-      <DetalhesEncomenda encomenda={encomendaMock} />
-      <FormularioAtualizacaoEncomenda encomendaId={encomendaMock.encomendaID} dataEntregaInicial={encomendaMock.dataEntrega} />
-    </main>
+      <div className="layout">
+        <Sidebar orders={ordersMock} onSelectOrder={setSelectedOrder} />
+        <main className="main-content">
+          <DetalhesEncomenda encomenda={selectedOrder} />
+          <FormularioAtualizacaoEncomenda
+            encomendaId={selectedOrder.encomendaID}
+            dataEntregaInicial={selectedOrder.dataEntrega}
+          />
+        </main>
+      </div>
+    </div>
   );
 }
