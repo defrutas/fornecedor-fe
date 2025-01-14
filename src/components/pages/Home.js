@@ -24,7 +24,7 @@ function DetalhesEncomenda({ encomenda }) {
         </div>
         <div className="detail-item">
           <span className="detail-label">Estado:</span>
-          <span>{encomenda.estado}</span>
+          <span>{encomenda.estadoID}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Nome do Fornecedor:</span>
@@ -50,14 +50,17 @@ function FormularioAtualizacaoEncomenda({ OrderSHID, dataEntregaInicial }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Update estadoID to 4 if "Encomenda Completa" is checked
     const updatedData = {
       dataEntrega,
-      estado: estaCompleta ? 'Completa' : undefined, // Only include `estado` if checkbox is checked
+      estadoID: estaCompleta ? 4 : undefined, // Set estadoID to 4 when checked
     };
 
+    console.log('Submitting updated data:', updatedData);
+
     try {
-      const response = await fetch(`http://4.251.113.179:5000/orders/${OrderSHID}`, {
-        method: 'PATCH',
+      const response = await fetch(`http://4.251.113.179:5000/send-encomenda/`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -134,7 +137,7 @@ export default function Home() {
         const response = await fetch('http://4.251.113.179:5000/orders/all');
         const data = await response.json();
         setOrders(data);
-        setSelectedOrder(data[0]); // Select the first order by default
+        setSelectedOrder(data[0]);
       } catch (error) {
         console.error('Error fetching orders:', error);
       } finally {
