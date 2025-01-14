@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Home.css';
 
 function DetalhesEncomenda({ encomenda }) {
@@ -8,49 +8,71 @@ function DetalhesEncomenda({ encomenda }) {
       <div className="order-details">
         <div className="detail-item">
           <span className="detail-label">ID da Encomenda:</span>
-          <span>{encomenda.encomendaID}</span>
+          <span>{encomenda.OrderSHID}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Encomenda Completa:</span>
           <span>{encomenda.encomendaCompleta ? 'Sim' : 'Não'}</span>
         </div>
         <div className="detail-item">
-          <span className="detail-label">ID do Profissional:</span>
-          <span>{encomenda.profissionalID}</span>
-        </div>
-        <div className="detail-item">
           <span className="detail-label">Data da Encomenda:</span>
-          <span>{encomenda.dataEncomenda}</span>
+          <span>{encomenda.dataEncomenda || 'N/A'}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Data de Entrega:</span>
-          <span>{encomenda.dataEntrega}</span>
+          <span>{encomenda.dataEntrega || 'N/A'}</span>
         </div>
         <div className="detail-item">
-          <span className="detail-label">Aprovado pelo Administrador:</span>
-          <span>{encomenda.aprovadoPorAdministrador ? 'Sim' : 'Não'}</span>
+          <span className="detail-label">Estado:</span>
+          <span>{encomenda.estado}</span>
         </div>
         <div className="detail-item">
-          <span className="detail-label">ID do Estado:</span>
-          <span>{encomenda.estadoID}</span>
+          <span className="detail-label">Nome do Fornecedor:</span>
+          <span>{encomenda.nomeFornecedor}</span>
         </div>
         <div className="detail-item">
-          <span className="detail-label">ID do Fornecedor:</span>
-          <span>{encomenda.fornecedorID}</span>
+          <span className="detail-label">Contacto do Fornecedor:</span>
+          <span>{encomenda.contactoFornecedor}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Quantidade Enviada:</span>
+          <span>{encomenda.quantidadeEnviada}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function FormularioAtualizacaoEncomenda({ encomendaId, dataEntregaInicial }) {
-  const [dataEntrega, setDataEntrega] = useState(dataEntregaInicial);
+function FormularioAtualizacaoEncomenda({ OrderSHID, dataEntregaInicial }) {
+  const [dataEntrega, setDataEntrega] = useState(dataEntregaInicial || '');
   const [estaCompleta, setEstaCompleta] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate the order update
-    alert('Encomenda atualizada com sucesso!');
+
+    const updatedData = {
+      dataEntrega,
+      estado: estaCompleta ? 'Completa' : undefined, // Only include `estado` if checkbox is checked
+    };
+
+    try {
+      const response = await fetch(`http://4.251.113.179:5000/orders/${OrderSHID}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update the order.');
+      }
+
+      alert('Encomenda atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Ocorreu um erro ao atualizar a encomenda.');
+    }
   };
 
   return (
@@ -89,11 +111,11 @@ function Sidebar({ orders, onSelectOrder }) {
       <ul className="order-list">
         {orders.map((order) => (
           <li
-            key={order.encomendaID}
+            key={order.OrderSHID}
             className="order-item"
             onClick={() => onSelectOrder(order)}
           >
-            Encomenda #{order.encomendaID}
+            Encomenda #{order.OrderSHID}
           </li>
         ))}
       </ul>
@@ -102,42 +124,50 @@ function Sidebar({ orders, onSelectOrder }) {
 }
 
 export default function Home() {
-  const ordersMock = [
-    {
-      encomendaID: '12345',
-      encomendaCompleta: false,
-      profissionalID: 'PROF001',
-      dataEncomenda: '2023-05-01',
-      dataEntrega: '2023-05-10',
-      aprovadoPorAdministrador: true,
-      estadoID: 'PENDENTE',
-      fornecedorID: 'FORN001',
-    },
-    {
-      encomendaID: '67890',
-      encomendaCompleta: true,
-      profissionalID: 'PROF002',
-      dataEncomenda: '2023-06-15',
-      dataEntrega: '2023-06-20',
-      aprovadoPorAdministrador: false,
-      estadoID: 'CONCLUIDO',
-      fornecedorID: 'FORN002',
-    },
-  ];
+  const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedOrder, setSelectedOrder] = useState(ordersMock[0]);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch('http://4.251.113.179:5000/orders/all');
+        const data = await response.json();
+        setOrders(data);
+        setSelectedOrder(data[0]); // Select the first order by default
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (orders.length === 0) {
+    return <div className="no-orders">No orders available.</div>;
+  }
 
   return (
     <div className="home-container">
       <h1 className="page-title">Gestão de Encomendas do Fornecedor de Medicamentos</h1>
       <div className="layout">
-        <Sidebar orders={ordersMock} onSelectOrder={setSelectedOrder} />
+        <Sidebar orders={orders} onSelectOrder={setSelectedOrder} />
         <main className="main-content">
-          <DetalhesEncomenda encomenda={selectedOrder} />
-          <FormularioAtualizacaoEncomenda
-            encomendaId={selectedOrder.encomendaID}
-            dataEntregaInicial={selectedOrder.dataEntrega}
-          />
+          {selectedOrder && (
+            <>
+              <DetalhesEncomenda encomenda={selectedOrder} />
+              <FormularioAtualizacaoEncomenda
+                OrderSHID={selectedOrder.OrderSHID}
+                dataEntregaInicial={selectedOrder.dataEntrega}
+              />
+            </>
+          )}
         </main>
       </div>
     </div>
