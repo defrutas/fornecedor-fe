@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import './Home.css';
 
 function DetalhesEncomenda({ encomenda }) {
+  const estadoLabels = {
+    1: 'Pendente',
+    2: 'Cancelado',
+    3: 'Aguardar Envio',
+    4: 'Concluído',
+  };
+
+  const nomeMedicamento = encomenda.medicamentos && encomenda.medicamentos[0] ? encomenda.medicamentos[0].nomeMedicamento : 'N/A';
+
   return (
     <div className="order-details-card">
       <h2 className="section-title">Detalhes da Encomenda</h2>
@@ -24,7 +33,7 @@ function DetalhesEncomenda({ encomenda }) {
         </div>
         <div className="detail-item">
           <span className="detail-label">Estado:</span>
-          <span>{encomenda.estadoID}</span>
+          <span>{estadoLabels[encomenda.estadoID] || 'Desconhecido'}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Nome do Fornecedor:</span>
@@ -38,10 +47,16 @@ function DetalhesEncomenda({ encomenda }) {
           <span className="detail-label">Quantidade Enviada:</span>
           <span>{encomenda.quantidadeEnviada}</span>
         </div>
+        <div className="detail-item">
+          <span className="detail-label">Nome do Medicamento:</span>
+          <span>{nomeMedicamento}</span>
+        </div>
       </div>
     </div>
   );
 }
+
+
 
 function FormularioAtualizacaoEncomenda({ OrderSHID, dataEntregaInicial }) {
   const [dataEntrega, setDataEntrega] = useState(dataEntregaInicial || '');
@@ -50,21 +65,23 @@ function FormularioAtualizacaoEncomenda({ OrderSHID, dataEntregaInicial }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Update estadoID to 4 if "Encomenda Completa" is checked
+    // Prepare the data to match the backend structure
     const updatedData = {
-      dataEntrega,
-      estadoID: estaCompleta ? 4 : undefined, // Set estadoID to 4 when checked
+      encomenda: {
+        encomendaID: OrderSHID,  // Rename to encomendaID to match backend
+        dataEntrega,  // Ensure this is in the correct format (YYYY-MM-DD)
+        encomendaCompleta: estaCompleta,  // Use encomendaCompleta instead of estadoID
+      },
     };
 
-    console.log('Submitting updated data:', updatedData);
-
     try {
-      const response = await fetch(`http://4.251.113.179:5000/send-encomenda/`, {
+      const response = await fetch('http://4.251.113.179:5000/send-encomenda/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedData),
+        body: JSON.stringify(updatedData),  // Send the data as JSON
+        mode: 'cors', // Handle CORS requests
       });
 
       if (!response.ok) {
